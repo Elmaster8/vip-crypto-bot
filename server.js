@@ -1,19 +1,38 @@
 import express from "express";
+import bodyParser from "body-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import paymentsRouter from "./routes/payments.js";
-import discordRouter from "./routes/discord.js";
+import paymentsRoutes from "./routes/payments.js";
+import { notifyExpiringUsers } from "./utils/notifyExpiry.js";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 // Routes
-app.use("/payments", paymentsRouter);
-app.use("/discord", discordRouter);
+app.use("/payments", paymentsRoutes);
 
+// Redirect root
 app.get("/", (req, res) => {
-  res.json({ message: "VIP Crypto Bot is live 🚀" });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// Run daily reminder (Render free tier)
+const intervalHours = process.env.CRON_INTERVAL_HOURS || 24;
+setInterval(() => {
+  notifyExpiringUsers();
+}, intervalHours * 60 * 60 * 1000);
