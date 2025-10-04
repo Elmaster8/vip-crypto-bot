@@ -7,11 +7,12 @@ import CryptoJS from "crypto-js";
 import dotenv from "dotenv";
 
 dotenv.config();
+
 const router = express.Router();
 
 // SQLite DB
 const db = new sqlite3.Database("./db/vip_users.db", (err) => {
-  if(err) console.error(err);
+  if (err) console.error(err);
   else console.log("SQLite DB connected");
 });
 
@@ -27,6 +28,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
 // Create MaxelPay checkout
 router.post("/create", async (req, res) => {
   const { orderID, amount, userEmail } = req.body;
+
   const payload = {
     orderID,
     amount,
@@ -62,14 +64,13 @@ router.post("/create", async (req, res) => {
 });
 
 // Webhook for successful payment
-router.post("/webhook", async (req,res) => {
+router.post("/webhook", async (req, res) => {
   const { userEmail, discordId } = req.body;
 
-  // Assign VIP role
   try {
-    const invite = await createUniqueInvite(process.env.DISCORD_CHANNEL_ID);
+    const invite = await createUniqueInvite();
     await assignVipRole(discordId);
-    const expiresAt = Date.now() + 30*24*60*60*1000;
+    const expiresAt = Date.now() + 30*24*60*60*1000; // 30 days
 
     db.run(`INSERT INTO users (email, discord_id, invite, expires_at) VALUES (?,?,?,?)`,
       [userEmail, discordId, invite, expiresAt], (err) => {
@@ -82,21 +83,6 @@ router.post("/webhook", async (req,res) => {
     console.error(err);
     res.status(500).json({ error: "Webhook failed" });
   }
-});
-
-// Renewal route
-router.post("/renew", async (req,res) => {
-  const { userEmail } = req.body;
-  db.get("SELECT * FROM users WHERE email=? ORDER BY id DESC LIMIT 1", [userEmail], async (err,row) => {
-    if(err || !row) return res.status(404).json({ message: "User not found" });
-
-    // Extend expiration
-    const newExpiry = Date.now() + 30*24*60*60*1000;
-    db.run("UPDATE users SET expires_at=? WHERE id=?", [newExpiry, row.id]);
-
-    // Create new MaxelPay checkout (reuse /create logic)
-    res.json({ checkout_url: `${process.env.FRONTEND_URL}/thank-you.html?expires=${newExpiry}` });
-  });
 });
 
 export default router;
