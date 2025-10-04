@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP Crypto Access</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">🔥 Become a VIP</h1>
+    <p class="subtitle">Get 30-day access to our exclusive Discord VIP channel.</p>
+
+    <input type="email" id="email" placeholder="Enter your email">
+
+    <div>
+      <a href="#" class="btn btn-crypto" id="cryptoBtn">Pay with Crypto</a>
+      <a href="https://www.patreon.com/yourpage" target="_blank" class="btn btn-patreon">Patreon</a>
+    </div>
+
+    <div>
+      <a href="#" class="btn btn-renew" id="renewBtn">Renew VIP</a>
+    </div>
+  </div>
+
+  <script>
+    const cryptoBtn = document.getElementById("cryptoBtn");
+    const renewBtn = document.getElementById("renewBtn");
+
+    cryptoBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      if(!email) return alert("Enter your email");
+      const res = await fetch("/payments/create", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ orderID: Date.now(), amount: 30, userEmail: email })
+      });
+      const data = await res.json();
+      if(data.checkout_url) window.location.href = data.checkout_url;
+      else alert("Failed to create crypto checkout");
+    });
+
+    renewBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      if(!email) return alert("Enter your email");
+      const res = await fetch("/payments/renew", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ userEmail: email })
+      });
+      const data = await res.json();
+      if(data.checkout_url) window.location.href = data.checkout_url;
+      else alert("Failed to create renewal checkout");
+    });
+  </script>
+</body>
+</html>
