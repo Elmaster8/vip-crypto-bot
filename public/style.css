@@ -1,0 +1,89 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #000000, #1a1a1a);
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  background: #111;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+  max-width: 500px;
+  text-align: center;
+}
+
+h1.title {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px #000;
+}
+
+p.subtitle {
+  margin-bottom: 30px;
+  color: #ccc;
+}
+
+input[type="email"] {
+  width: 80%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 25px;
+  margin: 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.btn-crypto {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.btn-crypto:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+}
+
+.btn-patreon {
+  background: #ff424d;
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.btn-patreon:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+}
+
+.btn-renew {
+  background: #4caf50;
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.btn-renew:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+}
