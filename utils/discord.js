@@ -1,6 +1,7 @@
 // utils/discord.js
 import { Client, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const client = new Client({
@@ -9,7 +10,7 @@ const client = new Client({
 
 client.login(process.env.DISCORD_BOT_TOKEN);
 
-// Exported functions to match what payments.js expects
+// Assign VIP role
 export const assignVipRole = async (userId) => {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_SERVER_ID);
@@ -21,6 +22,7 @@ export const assignVipRole = async (userId) => {
   }
 };
 
+// Remove VIP role
 export const removeVipRole = async (userId) => {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_SERVER_ID);
@@ -32,6 +34,7 @@ export const removeVipRole = async (userId) => {
   }
 };
 
+// Create unique Discord invite
 export const createUniqueInvite = async () => {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_SERVER_ID);
