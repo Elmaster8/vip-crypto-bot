@@ -8,10 +8,11 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
 });
 
+// Login to Discord
 client.login(process.env.DISCORD_BOT_TOKEN);
 
 // Assign VIP role
-export const assignVipRole = async (userId) => {
+export async function assignVipRole(userId) {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_SERVER_ID);
     const member = await guild.members.fetch(userId);
@@ -20,10 +21,10 @@ export const assignVipRole = async (userId) => {
   } catch (err) {
     console.error("Error adding VIP role:", err);
   }
-};
+}
 
 // Remove VIP role
-export const removeVipRole = async (userId) => {
+export async function removeVipRole(userId) {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_SERVER_ID);
     const member = await guild.members.fetch(userId);
@@ -32,17 +33,17 @@ export const removeVipRole = async (userId) => {
   } catch (err) {
     console.error("Error removing VIP role:", err);
   }
-};
+}
 
-// Create unique Discord invite
-export const createUniqueInvite = async () => {
+// Create unique invite
+export async function createUniqueInvite() {
   try {
     const guild = await client.guilds.fetch(process.env.DISCORD_SERVER_ID);
-    const channel = await guild.channels.fetch(process.env.YOUR_DISCORD_CHANNEL_ID);
+    const channel = await guild.channels.fetch(process.env.DISCORD_CHANNEL_ID);
     const invite = await channel.createInvite({ maxUses: 1, unique: true, maxAge: 2592000 }); // 30 days
     return invite.url;
   } catch (err) {
     console.error("Error creating invite:", err);
     return null;
   }
-};
+}
