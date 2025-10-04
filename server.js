@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Routes
 app.use("/payments", paymentsRoutes);
 
-// Redirect root
+// Root route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -31,8 +31,13 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Run daily reminder (Render free tier)
-const intervalHours = process.env.CRON_INTERVAL_HOURS || 24;
-setInterval(() => {
-  notifyExpiringUsers();
+// Safe daily reminder (won’t crash server)
+const intervalHours = parseInt(process.env.CRON_INTERVAL_HOURS) || 24;
+setInterval(async () => {
+  try {
+    await notifyExpiringUsers();
+    console.log("Checked for expiring VIP users");
+  } catch (err) {
+    console.error("Error in notifyExpiringUsers:", err);
+  }
 }, intervalHours * 60 * 60 * 1000);
