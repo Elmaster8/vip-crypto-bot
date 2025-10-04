@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP Activated!</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">🎉 VIP Activated!</h1>
+    <p class="subtitle">Check your email for your <b>unique Discord invite</b>.</p>
+    <p>Your VIP access will expire on: <span id="expires"></span></p>
+    <a href="/" class="btn btn-crypto">Back to Home</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const expires = params.get("expires");
+    if(expires) document.getElementById("expires").innerText = new Date(Number(expires)).toLocaleDateString();
+  </script>
+</body>
+</html>
