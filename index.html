@@ -1,1 +1,60 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP Crypto Access</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">VIP Crypto Access</h1>
+    <p class="subtitle">Unlock exclusive VIP Discord access for 30 days</p>
+
+    <div class="buttons">
+      <!-- MaxelPay Crypto Button -->
+      <form id="cryptoForm" method="POST" action="">
+        <input type="hidden" name="orderID" value="123456">
+        <input type="hidden" name="amount" value="100">
+        <input type="hidden" name="userEmail" id="userEmail" value="">
+        <button type="submit" class="btn btn-crypto">Pay with Crypto</button>
+      </form>
+
+      <!-- Patreon Button -->
+      <a href="https://patreon.com/yourpage" target="_blank" class="btn btn-patreon">Pay with Patreon</a>
+    </div>
+
+    <p class="note">Once payment is confirmed, you’ll receive a unique Discord invite via email.</p>
+  </div>
+
+  <script>
+    // Prompt for user email
+    const email = prompt("Enter your email to receive your VIP invite:");
+    if(email) {
+      document.getElementById("userEmail").value = email;
+    }
+
+    // Submit crypto form to backend
+    document.getElementById("cryptoForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const orderID = e.target.orderID.value;
+      const amount = e.target.amount.value;
+      const userEmail = e.target.userEmail.value;
+
+      const response = await fetch('https://vip-crypto-bot.onrender.com/payments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderID, amount, userEmail })
+      });
+
+      const data = await response.json();
+      if(data && data.checkout_url){
+        window.location.href = data.checkout_url;
+      } else {
+        alert("Error creating checkout. Try again later.");
+      }
+    });
+  </script>
+</body>
+</html>
