@@ -1,40 +1,102 @@
 import express from "express";
-import axios from "axios";
+import fetch from "node-fetch";
+import { assignVipRole, createUniqueInvite } from "../utils/discord.js";
+import { sendInviteEmail } from "../utils/email.js";
+import sqlite3 from "sqlite3";
 import CryptoJS from "crypto-js";
+import dotenv from "dotenv";
 
+dotenv.config();
 const router = express.Router();
 
-const endpoint = `https://api.maxelpay.com/v1/${process.env.MAXELPAY_ENV}/merchant/order/checkout`;
+// SQLite DB
+const db = new sqlite3.Database("./db/vip_users.db", (err) => {
+  if(err) console.error(err);
+  else console.log("SQLite DB connected");
+});
 
-const encryptPayload = (secretKey, payload) => {
-  const key = CryptoJS.enc.Utf8.parse(secretKey);
-  const iv = CryptoJS.enc.Utf8.parse(secretKey.substr(0,16));
-  return CryptoJS.AES.encrypt(JSON.stringify(payload), key, { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).toString();
-};
+// Create table if not exists
+db.run(`CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT,
+  discord_id TEXT,
+  invite TEXT,
+  expires_at INTEGER
+)`);
 
+// Create MaxelPay checkout
 router.post("/create", async (req, res) => {
+  const { orderID, amount, userEmail } = req.body;
+  const payload = {
+    orderID,
+    amount,
+    currency: "USD",
+    timestamp: Math.floor(Date.now() / 1000),
+    userName: userEmail.split("@")[0],
+    siteName: "VIP Crypto",
+    userEmail,
+    redirectUrl: `${process.env.FRONTEND_URL}/thank-you.html`,
+    cancelUrl: `${process.env.FRONTEND_URL}/cancel.html`,
+    webhookUrl: `${process.env.BASE_URL}/payments/webhook`
+  };
+
+  const key = CryptoJS.enc.Utf8.parse(process.env.MAXELPAY_SECRET_KEY);
+  const iv = CryptoJS.enc.Utf8.parse(process.env.MAXELPAY_SECRET_KEY.substr(0,16));
+  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), key, {
+    iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7
+  }).toString();
+
   try {
-    const { orderID, amount, userEmail } = req.body;
-    const payload = {
-      orderID,
-      amount,
-      currency: "USD",
-      timestamp: Math.floor(Date.now()/1000).toString(),
-      userName: "VIP Member",
-      siteName: "VIP Crypto Bot",
-      userEmail,
-      redirectUrl: `${process.env.FRONTEND_URL}/thank-you`,
-      websiteUrl: process.env.FRONTEND_URL,
-      cancelUrl: `${process.env.FRONTEND_URL}/cancel`,
-      webhookUrl: `${process.env.BASE_URL}/payments/webhook`
-    };
-    const encrypted = encryptPayload(process.env.MAXELPAY_SECRET_KEY, payload);
-    const { data } = await axios.post(endpoint, { data: encrypted }, { headers: { "api-key": process.env.MAXELPAY_API_KEY } });
-    res.json(data);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Failed to create checkout" });
+    const response = await fetch(`https://api.maxelpay.com/v1/prod/merchant/order/checkout`, {
+      method: "POST",
+      headers: { "api-key": process.env.MAXELPAY_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ data: encrypted })
+    });
+    const data = await response.json();
+    if(data.checkout_url) res.json({ checkout_url: data.checkout_url });
+    else res.status(500).json({ error: "Failed to create checkout" });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: "Error creating checkout" });
   }
+});
+
+// Webhook for successful payment
+router.post("/webhook", async (req,res) => {
+  const { userEmail, discordId } = req.body;
+
+  // Assign VIP role
+  try {
+    const invite = await createUniqueInvite(process.env.DISCORD_CHANNEL_ID);
+    await assignVipRole(discordId);
+    const expiresAt = Date.now() + 30*24*60*60*1000;
+
+    db.run(`INSERT INTO users (email, discord_id, invite, expires_at) VALUES (?,?,?,?)`,
+      [userEmail, discordId, invite, expiresAt], (err) => {
+        if(err) console.error(err);
+      });
+
+    await sendInviteEmail(userEmail, invite);
+    res.status(200).json({ success: true });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: "Webhook failed" });
+  }
+});
+
+// Renewal route
+router.post("/renew", async (req,res) => {
+  const { userEmail } = req.body;
+  db.get("SELECT * FROM users WHERE email=? ORDER BY id DESC LIMIT 1", [userEmail], async (err,row) => {
+    if(err || !row) return res.status(404).json({ message: "User not found" });
+
+    // Extend expiration
+    const newExpiry = Date.now() + 30*24*60*60*1000;
+    db.run("UPDATE users SET expires_at=? WHERE id=?", [newExpiry, row.id]);
+
+    // Create new MaxelPay checkout (reuse /create logic)
+    res.json({ checkout_url: `${process.env.FRONTEND_URL}/thank-you.html?expires=${newExpiry}` });
+  });
 });
 
 export default router;
